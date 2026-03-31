@@ -31,6 +31,7 @@ func SetupRouter() *gin.Engine {
 		rooms := apiGroup.Group("/rooms")
 		{
 			rooms.GET("", AuthMiddleware(), GetRooms)
+			rooms.GET("/:id/bookings", AuthMiddleware(), GetRoomBookings) // 新增：查看房间预约情况
 			// Admin only
 			rooms.POST("", AuthMiddleware(), AdminRequired(), CreateRoom)
 			rooms.PUT("/:id", AuthMiddleware(), AdminRequired(), UpdateRoom)

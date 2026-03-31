@@ -97,3 +97,20 @@ func DeleteRoom(c *gin.Context) {
 	}
 	utils.Success(c, gin.H{"deleted": true})
 }
+
+func GetRoomBookings(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		utils.Error(c, http.StatusBadRequest, "Invalid room ID")
+		return
+	}
+
+	var bookings []models.Booking
+	// 仅返回已批准或待审批的预约，这些是会占用时间的
+	if err := repository.DB.Where("room_id = ? AND status IN ?", id, []string{"approved", "pending"}).Find(&bookings).Error; err != nil {
+		utils.Error(c, http.StatusInternalServerError, "Failed to fetch room bookings")
+		return
+	}
+	utils.Success(c, bookings)
+}

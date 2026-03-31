@@ -42,7 +42,19 @@
     </el-main>
 
     <!-- 预约对话框 -->
-    <el-dialog v-model="showBookingDialog" title="发起预约" width="500px">
+    <el-dialog v-model="showBookingDialog" title="发起预约" width="550px">
+      <div v-if="busySlots.length > 0" class="busy-info">
+        <p style="color: #f56c6c; font-size: 14px; margin-bottom: 10px;">
+          <strong>注意：以下时间段已被占用（标红）：</strong>
+        </p>
+        <div class="busy-list">
+          <el-tag v-for="slot in busySlots" :key="slot.id" type="danger" effect="dark" class="slot-tag">
+            {{ formatTime(slot.start_time) }} 至 {{ formatTime(slot.end_time) }}
+          </el-tag>
+        </div>
+      </div>
+      <el-divider v-if="busySlots.length > 0" />
+      
       <el-form :model="bookingForm" label-width="80px">
         <el-form-item label="会议名称">
           <el-input v-model="bookingForm.title" />
@@ -93,6 +105,7 @@ const userStore = useUserStore()
 const isAdmin = computed(() => userStore.user?.role === 'admin')
 
 const rooms = ref<any[]>([])
+const busySlots = ref<any[]>([])
 const showBookingDialog = ref(false)
 const showAddDialog = ref(false)
 const selectedRoom = ref<any>(null)
@@ -118,9 +131,20 @@ const handleLogout = () => {
   router.push('/login')
 }
 
-const openBooking = (room: any) => {
+const openBooking = async (room: any) => {
   selectedRoom.value = room
+  busySlots.value = [] // Reset
+  try {
+    const res = await request.get(`/rooms/${room.id}/bookings`)
+    busySlots.value = res.data
+  } catch (error) {}
   showBookingDialog.value = true
+}
+
+const formatTime = (time: string) => {
+  return new Date(time).toLocaleString('zh-CN', {
+    month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
+  })
 }
 
 const handleBooking = async () => {
@@ -170,4 +194,7 @@ onMounted(fetchRooms)
 .room-card { margin-bottom: 20px; }
 .card-header { display: flex; justify-content: space-between; align-items: center; }
 .actions { margin-top: 20px; display: flex; justify-content: space-between; }
+.busy-info { margin-bottom: 20px; }
+.busy-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.slot-tag { margin-bottom: 5px; }
 </style>
