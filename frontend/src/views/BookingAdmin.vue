@@ -4,6 +4,7 @@
       <div class="logo">RoomSync - 审批中心</div>
       <div class="nav-links">
         <el-button link @click="$router.push('/rooms')">会议室大盘</el-button>
+        <el-button link @click="$router.push('/my/bookings')">我的预约</el-button>
         <el-button link type="primary">审批管理</el-button>
       </div>
       <div class="user-info">
@@ -29,11 +30,14 @@
               <el-tag :type="statusType(scope.row.status)">{{ scope.row.status }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="200">
+          <el-table-column label="操作" width="250">
             <template #default="scope">
               <div v-if="scope.row.status === 'pending'">
                 <el-button size="small" type="success" @click="handleApprove(scope.row.id, 'approved')">通过</el-button>
                 <el-button size="small" type="danger" @click="handleApprove(scope.row.id, 'rejected')">拒绝</el-button>
+              </div>
+              <div v-else-if="scope.row.status === 'approved'">
+                <el-button size="small" type="danger" plain @click="handleCancel(scope.row.id)">强制撤销</el-button>
               </div>
               <span v-else>-</span>
             </template>
@@ -49,7 +53,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import request from '@/api'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -64,6 +68,18 @@ const handleApprove = async (id: number, status: string) => {
   await request.put(`/bookings/${id}/approve`, { status })
   ElMessage.success('操作成功')
   fetchBookings()
+}
+
+const handleCancel = (id: number) => {
+  ElMessageBox.confirm('作为管理员，您确定要强制撤销这条已同意的预约吗？', '强制撤销确认', {
+    confirmButtonText: '确定撤销',
+    cancelButtonText: '取消',
+    type: 'error'
+  }).then(async () => {
+    await request.put(`/bookings/${id}/cancel`)
+    ElMessage.success('预约已强制撤销')
+    fetchBookings()
+  })
 }
 
 const formatTime = (time: string) => new Date(time).toLocaleString()

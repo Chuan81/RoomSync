@@ -11,11 +11,12 @@ import (
 )
 
 type RoomReq struct {
-	Name         string `json:"name" binding:"required"`
-	Capacity     int    `json:"capacity" binding:"required"`
-	Location     string `json:"location"`
-	Equipment    string `json:"equipment"`
-	NeedApproval bool   `json:"need_approval"`
+	Name           string `json:"name" binding:"required"`
+	Capacity       int    `json:"capacity" binding:"required"`
+	Location       string `json:"location"`
+	Equipment      string `json:"equipment"`
+	NeedApproval   bool   `json:"need_approval"`
+	MinAdvanceTime int    `json:"min_advance_time"`
 }
 
 func CreateRoom(c *gin.Context) {
@@ -25,12 +26,18 @@ func CreateRoom(c *gin.Context) {
 		return
 	}
 
+	// 最小值为 5 分钟
+	if req.MinAdvanceTime < 5 {
+		req.MinAdvanceTime = 5
+	}
+
 	room := models.Room{
-		Name:         req.Name,
-		Capacity:     req.Capacity,
-		Location:     req.Location,
-		Equipment:    req.Equipment,
-		NeedApproval: req.NeedApproval,
+		Name:           req.Name,
+		Capacity:       req.Capacity,
+		Location:       req.Location,
+		Equipment:      req.Equipment,
+		NeedApproval:   req.NeedApproval,
+		MinAdvanceTime: req.MinAdvanceTime,
 	}
 
 	if err := repository.DB.Create(&room).Error; err != nil {
@@ -75,6 +82,7 @@ func UpdateRoom(c *gin.Context) {
 	room.Location = req.Location
 	room.Equipment = req.Equipment
 	room.NeedApproval = req.NeedApproval
+	room.MinAdvanceTime = req.MinAdvanceTime
 
 	if err := repository.DB.Save(&room).Error; err != nil {
 		utils.Error(c, http.StatusInternalServerError, "Failed to update room")

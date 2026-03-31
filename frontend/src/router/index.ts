@@ -3,6 +3,7 @@ import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
 import RoomList from '../views/RoomList.vue'
 import BookingAdmin from '../views/BookingAdmin.vue'
+import MyBookings from '../views/MyBookings.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -13,6 +14,11 @@ const router = createRouter({
     { 
       path: '/rooms', 
       component: RoomList,
+      meta: { requiresAuth: true }
+    },
+    { 
+      path: '/my/bookings', 
+      component: MyBookings,
       meta: { requiresAuth: true }
     },
     { 

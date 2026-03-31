@@ -39,6 +39,24 @@ func CreateBooking(c *gin.Context) {
 		return
 	}
 
+	// 提前预订时间校验
+	minAdvanceDuration := time.Duration(room.MinAdvanceTime) * time.Minute
+	if time.Until(req.StartTime) < minAdvanceDuration {
+		utils.Error(c, http.StatusBadRequest, "该会议室要求至少提前 "+strconv.Itoa(room.MinAdvanceTime)+" 分钟预约")
+		return
+	}
+
+	// 限制活跃预约数量 (pending 或 approved)
+	var activeCount int64
+	repository.DB.Model(&models.Booking{}).Where(
+		"room_id = ? AND user_id = ? AND status IN ?",
+		req.RoomID, userID.(uint), []string{"pending", "approved"},
+	).Count(&activeCount)
+	if activeCount >= int64(room.MaxActiveBookings) {
+		utils.Error(c, http.StatusForbidden, "在该房间您已有 "+strconv.Itoa(int(activeCount))+" 条未处理/未开始的预约，达到上限")
+		return
+	}
+
 	// Conflict detection
 	var conflictCount int64
 	repository.DB.Model(&models.Booking{}).Where(

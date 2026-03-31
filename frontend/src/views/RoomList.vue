@@ -4,6 +4,7 @@
       <div class="logo">RoomSync</div>
       <div class="nav-links">
         <el-button link type="primary">会议室大盘</el-button>
+        <el-button link @click="$router.push('/my/bookings')">我的预约</el-button>
         <el-button v-if="isAdmin" link @click="$router.push('/admin/bookings')">审批管理</el-button>
       </div>
       <div class="user-info">
@@ -32,6 +33,7 @@
             <p><strong>容量:</strong> {{ room.capacity }}人</p>
             <p><strong>地点:</strong> {{ room.location }}</p>
             <p><strong>设备:</strong> {{ room.equipment || '无' }}</p>
+            <p><strong>提前预约:</strong> 至少 {{ room.min_advance_time }} 分钟</p>
             <div class="actions">
               <el-button type="primary" @click="openBooking(room)">立即预约</el-button>
               <el-button v-if="isAdmin" type="danger" link @click="handleDelete(room.id)">删除</el-button>
@@ -83,6 +85,9 @@
         <el-form-item label="容量"><el-input-number v-model="roomForm.capacity" :min="1" /></el-form-item>
         <el-form-item label="地点"><el-input v-model="roomForm.location" /></el-form-item>
         <el-form-item label="设备"><el-input v-model="roomForm.equipment" /></el-form-item>
+        <el-form-item label="提前预约(分)">
+          <el-input-number v-model="roomForm.min_advance_time" :min="5" />
+        </el-form-item>
         <el-form-item label="需要审批"><el-switch v-model="roomForm.need_approval" /></el-form-item>
       </el-form>
       <template #footer>
@@ -119,6 +124,7 @@ const roomForm = ref({
   location: '',
   equipment: '',
   need_approval: false,
+  min_advance_time: 720,
 })
 
 const fetchRooms = async () => {
@@ -133,7 +139,7 @@ const handleLogout = () => {
 
 const openBooking = async (room: any) => {
   selectedRoom.value = room
-  busySlots.value = [] // Reset
+  busySlots.value = []
   try {
     const res = await request.get(`/rooms/${room.id}/bookings`)
     busySlots.value = res.data
