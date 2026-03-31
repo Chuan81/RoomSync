@@ -44,6 +44,7 @@ func SetupRouter() *gin.Engine {
 			bookings.POST("", CreateBooking)
 			bookings.GET("/my", GetMyBookings)
 			bookings.PUT("/:id/cancel", CancelBooking)
+			bookings.PUT("/:id/checkin", CheckInBooking) // 新增签到接口
 			
 			// Admin only
 			bookings.GET("", AdminRequired(), GetAllBookings)

@@ -88,11 +88,25 @@ func CreateBooking(c *gin.Context) {
 		return
 	}
 
-	// TODO: Send notification asynchronously here
 	utils.Success(c, booking)
 }
 
+// 自动更新预约状态 (在查询列表时调用)
+func maintainBookingStatus() {
+	now := time.Now()
+	// 1. 已批准但未签到，且已经过了开始时间 30 分钟 -> 已过期
+	repository.DB.Model(&models.Booking{}).
+		Where("status = ? AND start_time < ?", "approved", now.Add(-30*time.Minute)).
+		Update("status", "expired")
+
+	// 2. 已签到且过了结束时间 -> 已完成
+	repository.DB.Model(&models.Booking{}).
+		Where("status = ? AND end_time < ?", "checked_in", now).
+		Update("status", "completed")
+}
+
 func GetMyBookings(c *gin.Context) {
+	maintainBookingStatus()
 	userID, _ := c.Get("userID")
 	var bookings []models.Booking
 	if err := repository.DB.Preload("Room").Where("user_id = ?", userID).Find(&bookings).Error; err != nil {
@@ -103,12 +117,56 @@ func GetMyBookings(c *gin.Context) {
 }
 
 func GetAllBookings(c *gin.Context) {
+	maintainBookingStatus()
 	var bookings []models.Booking
 	if err := repository.DB.Preload("Room").Preload("User").Find(&bookings).Error; err != nil {
 		utils.Error(c, http.StatusInternalServerError, "Failed to fetch bookings")
 		return
 	}
 	utils.Success(c, bookings)
+}
+
+func CheckInBooking(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		utils.Error(c, http.StatusBadRequest, "Invalid booking ID")
+		return
+	}
+
+	userID, _ := c.Get("userID")
+	role, _ := c.Get("role")
+
+	var booking models.Booking
+	if err := repository.DB.First(&booking, id).Error; err != nil {
+		utils.Error(c, http.StatusNotFound, "Booking not found")
+		return
+	}
+
+	if role != "admin" && booking.UserID != userID.(uint) {
+		utils.Error(c, http.StatusForbidden, "You can only check-in your own bookings")
+		return
+	}
+
+	if booking.Status != "approved" {
+		utils.Error(c, http.StatusBadRequest, "只有已批准的预约方可签到")
+		return
+	}
+
+	// 前后 30 分钟校验
+	now := time.Now()
+	if now.Before(booking.StartTime.Add(-30*time.Minute)) || now.After(booking.StartTime.Add(30*time.Minute)) {
+		utils.Error(c, http.StatusBadRequest, "会议开始时间前后30分钟内方可进行签到")
+		return
+	}
+
+	booking.Status = "checked_in"
+	booking.CheckedIn = true
+	if err := repository.DB.Save(&booking).Error; err != nil {
+		utils.Error(c, http.StatusInternalServerError, "Failed to check-in")
+		return
+	}
+	utils.Success(c, booking)
 }
 
 type ApproveReq struct {
@@ -140,8 +198,6 @@ func ApproveBooking(c *gin.Context) {
 		utils.Error(c, http.StatusInternalServerError, "Failed to update booking status")
 		return
 	}
-
-	// TODO: Send notification to user about approval/rejection
 	utils.Success(c, booking)
 }
 
@@ -161,7 +217,6 @@ func CancelBooking(c *gin.Context) {
 		return
 	}
 
-	// Allow users to cancel their own, and admins to cancel any
 	role, _ := c.Get("role")
 	if role != "admin" && booking.UserID != userID.(uint) {
 		utils.Error(c, http.StatusForbidden, "You can only cancel your own bookings")

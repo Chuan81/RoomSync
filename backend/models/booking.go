@@ -13,7 +13,8 @@ type Booking struct {
 	StartTime time.Time `gorm:"index;not null" json:"start_time"`
 	EndTime   time.Time `gorm:"index;not null" json:"end_time"`
 	Title     string    `gorm:"not null" json:"title"`
-	Status    string    `gorm:"default:'approved'" json:"status"` // 'pending', 'approved', 'rejected', 'cancelled'
+	Status    string    `gorm:"default:'approved'" json:"status"` // 'pending', 'approved', 'rejected', 'cancelled', 'checked_in', 'completed', 'expired'
+	CheckedIn bool      `gorm:"default:false" json:"checked_in"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

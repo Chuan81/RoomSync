@@ -1,69 +1,74 @@
 # RoomSync - 企业级轻量会议室预约系统
 
-RoomSync 是一款为中小型企业量身定制的轻量化、高性能会议室预约系统。采用 **Golang (Gin + Gorm)** 作为后端，**Vue 3 (TypeScript + Element Plus)** 作为前端，实现了从用户鉴权到会议室管理的完整闭环。
+RoomSync 是一款专为中小型企业设计的轻量化会议室预约管理系统。项目采用 **Golang (Gin + Gorm)** 作为后端核心，**Vue 3 (TypeScript + Element Plus)** 作为前端展示，实现了从预约发起、自动冲突检测、管理员审批到会议签到的全生命周期闭环管理。
 
-## 🌟 项目亮点 (简历撰写参考)
-- **后端 (Golang)**:
-  - **高效并发检测**: 针对核心预约业务，设计了基于时间区间重叠逻辑的数据库查询算法 `(start < end_new AND end > start_new)`，并配合索引确保在高并发预订下数据的强一致性。
-  - **RBAC 权限模型**: 实现了基于 JWT 的身份验证与基于中间件的角色访问控制 (Admin/Employee)，确保接口安全性。
-  - **Clean Architecture**: 遵循 MVC 思想设计项目目录，分层明确（Router, Handler, Service, Repository），大幅提升了代码的可维护性。
-- **前端 (Vue 3)**:
-  - **现代化技术栈**: 采用 Vue 3 (Composition API) + TypeScript + Pinia + Vite，保证了极致的开发效率与运行速度。
-  - **请求拦截机制**: 基于 Axios 封装了请求拦截器，实现了 Token 自动注入与全局错误消息反馈。
-  - **响应式设计**: 使用 Element Plus 实现了美观的响应式管理界面，适配多种桌面显示器。
+## 🌟 项目核心亮点 
+
+- **高效的时间区间冲突检测算法**:
+  - 核心逻辑基于区间重叠判定：`(start_time < new_end_time AND end_time > new_start_time)`。
+  - 结合数据库索引优化，确保在高并发预约场景下，同一会议室在同一时间段内绝不会出现“一房多订”的情况。
+- **全生命周期状态机管理**:
+  - 系统内置了严谨的状态流转逻辑：`Pending (待审)` -> `Approved (准许)` -> `Checked In (已签到)` -> `Completed (已完成)`。
+  - 针对未按时签到的预约，系统会自动将其标记为 `Expired (已过期)` 并释放资源。
+- **懒加载式状态自动维护 (Lazy Update)**:
+  - 采用“按需更新”策略，在用户查询列表时自动触发过期与完成状态的检查与更新，相比于传统的定时任务，降低了服务器常驻负载，体现了对系统性能的权衡思考。
+- **精细化的预约准入策略**:
+  - **提前量限制**: 支持设置会议室至少需提前多久预约（如提前 12 小时），并在后端强制校验。
+  - **活跃预约上限**: 实现了单个用户在单个房间的活跃预约数量限制（默认 3 条），有效防止资源恶意占用。
+- **人性化的可视化交互**:
+  - **冲突可视化**: 在预约时自动拉取并标红展示已占用时间段。
+  - **智能签到控制**: 按钮动态状态切换，仅在会议开始前后 30 分钟内开放签到，并配有 Tooltip 悬停提示。
 
 ## 🛠️ 技术栈
-| 模块 | 技术 |
+| 模块 | 技术实现 |
 | --- | --- |
-| **后端** | Golang 1.20+, Gin, GORM, MySQL, JWT (golang-jwt), Bcrypt, Viper |
-| **前端** | Vue 3, TypeScript, Vite, Element Plus, Vue Router, Pinia, Axios |
-| **工具** | Git, Postman, npm |
+| **后端 (Golang)** | Go 1.20+, Gin, GORM, MySQL 8.0, JWT, Bcrypt (加密), Viper (配置管理) |
+| **前端 (Vue 3)** | TypeScript, Vite, Element Plus, Pinia (状态管理), Vue Router, Axios |
+| **安全/规范** | RBAC 权限模型, JWT 鉴权中间件, RESTful API 规范, Git 规范配置 |
 
-## 📂 项目结构
-```text
-RoomSync/
-├── backend/            # 后端工程
-│   ├── api/            # 路由与控制器层 (Handler)
-│   ├── config/         # 配置管理 (YAML + Viper)
-│   ├── models/         # 数据库模型 (GORM)
-│   ├── repository/     # 数据库连接与初始化
-│   ├── utils/          # 工具函数 (JWT, Response 封装)
-│   └── main.go         # 入口文件
-├── frontend/           # 前端工程
-│   ├── src/
-│   │   ├── api/        # Axios 请求封装
-│   │   ├── views/      # 页面视图 (Login, RoomList)
-│   │   ├── store/      # Pinia 状态管理
-│   │   └── main.ts     # 入口文件
-└── README.md           # 项目文档
+## 📂 核心功能模块
+1. **认证与授权**: 基于 JWT 的登录注册，首位注册用户自动提权为 Admin。
+2. **会议室管理**: 管理员可配置会议室容量、地点、设备、审批需求及预约限制。
+3. **预约中心**:
+   - 员工可查看会议室大盘及已占用时段。
+   - 支持“我的预约”界面，追踪申请进度。
+4. **审批工作流**: 管理员一键处理申请，支持对已通过预约的“强制撤销”功能。
+5. **签到系统**: 会议现场 60 分钟窗口期内签到，支持二次确认。
+
+## 🚀 快速启动
+
+### 1. 数据库配置
+1. 创建 MySQL 数据库 `roomsync`。
+2. 修改 `backend/config/config.yaml` 中的 `dsn` 配置。
+
+### 2. 后端服务
+```bash
+cd backend
+go mod tidy
+go run main.go
 ```
 
-## 🚀 快速开始
+### 3. 前端界面
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-### 1. 后端启动
-1. 准备 MySQL 数据库，创建 `roomsync` 库。
-2. 修改 `backend/config/config.yaml` 中的 `dsn` (数据库连接地址)。
-3. 在 `backend/` 目录下执行：
-   ```bash
-   go mod tidy
-   go run main.go
-   ```
-
-### 2. 前端启动
-1. 在 `frontend/` 目录下安装依赖：
-   ```bash
-   npm install
-   ```
-2. 启动开发服务器：
-   ```bash
-   npm run dev
-   ```
-3. 访问 `http://localhost:5173`。
-
-## 📸 API 验证逻辑
-- **管理员**: 系统的第一个注册用户将自动获得 `admin` 权限，可以增删会议室。
-- **冲突检测**: 预约时系统会自动校验所选时间段内该会议室是否已被占用。
-- **状态机**: 支持 `pending` (待审核)、`approved` (已批准)、`rejected` (已拒绝)、`cancelled` (已取消) 四种状态。
+## 📂 目录结构
+```text
+RoomSync/
+├── backend/            # 后端 Golang 源码
+│   ├── api/            # 控制器与逻辑 (Handler)
+│   ├── models/         # 数据库模型 (User, Room, Booking)
+│   ├── repository/     # 数据库连接与初始化 (AutoMigrate)
+│   └── utils/          # JWT 签发、响应封装、中间件
+└── frontend/           # 前端 Vue 3 源码
+    └── src/
+        ├── api/        # Axios 封装
+        ├── views/      # 页面 (Login, Register, RoomList, MyBookings, BookingAdmin)
+        └── store/      # Pinia 全局状态
+```
 
 ## 📜 许可证
 MIT License
