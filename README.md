@@ -1,53 +1,69 @@
-# RoomSync - 会议室预约系统
+# RoomSync - 企业级轻量会议室预约系统
 
-这是一个企业级轻量会议室预约系统 MVP 版。采用前后端分离架构。
+RoomSync 是一款为中小型企业量身定制的轻量化、高性能会议室预约系统。采用 **Golang (Gin + Gorm)** 作为后端，**Vue 3 (TypeScript + Element Plus)** 作为前端，实现了从用户鉴权到会议室管理的完整闭环。
 
-## 技术栈
-- **后端:** Golang, Gin, Gorm, MySQL, JWT
-- **前端:** Vue 3, Vite, Element Plus, TypeScript (预留结构)
+## 🌟 项目亮点 (简历撰写参考)
+- **后端 (Golang)**:
+  - **高效并发检测**: 针对核心预约业务，设计了基于时间区间重叠逻辑的数据库查询算法 `(start < end_new AND end > start_new)`，并配合索引确保在高并发预订下数据的强一致性。
+  - **RBAC 权限模型**: 实现了基于 JWT 的身份验证与基于中间件的角色访问控制 (Admin/Employee)，确保接口安全性。
+  - **Clean Architecture**: 遵循 MVC 思想设计项目目录，分层明确（Router, Handler, Service, Repository），大幅提升了代码的可维护性。
+- **前端 (Vue 3)**:
+  - **现代化技术栈**: 采用 Vue 3 (Composition API) + TypeScript + Pinia + Vite，保证了极致的开发效率与运行速度。
+  - **请求拦截机制**: 基于 Axios 封装了请求拦截器，实现了 Token 自动注入与全局错误消息反馈。
+  - **响应式设计**: 使用 Element Plus 实现了美观的响应式管理界面，适配多种桌面显示器。
 
-## 核心功能
-1. 用户认证与授权 (基于 JWT, 划分 Admin/Employee 角色)
-2. 会议室资源的 CRUD
-3. 会议室预约，包括严格的时间冲突检测逻辑
-4. 审批工作流 (特定会议室需管理员审核)
-5. 取消预约功能
+## 🛠️ 技术栈
+| 模块 | 技术 |
+| --- | --- |
+| **后端** | Golang 1.20+, Gin, GORM, MySQL, JWT (golang-jwt), Bcrypt, Viper |
+| **前端** | Vue 3, TypeScript, Vite, Element Plus, Vue Router, Pinia, Axios |
+| **工具** | Git, Postman, npm |
 
-## 如何运行后端
-
-### 1. 环境准备
-- 确保安装了 `Go 1.20+`
-- 确保安装并运行 `MySQL`
-
-### 2. 数据库配置
-在 `MySQL` 中创建一个数据库:
-```sql
-CREATE DATABASE roomsync CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+## 📂 项目结构
+```text
+RoomSync/
+├── backend/            # 后端工程
+│   ├── api/            # 路由与控制器层 (Handler)
+│   ├── config/         # 配置管理 (YAML + Viper)
+│   ├── models/         # 数据库模型 (GORM)
+│   ├── repository/     # 数据库连接与初始化
+│   ├── utils/          # 工具函数 (JWT, Response 封装)
+│   └── main.go         # 入口文件
+├── frontend/           # 前端工程
+│   ├── src/
+│   │   ├── api/        # Axios 请求封装
+│   │   ├── views/      # 页面视图 (Login, RoomList)
+│   │   ├── store/      # Pinia 状态管理
+│   │   └── main.ts     # 入口文件
+└── README.md           # 项目文档
 ```
 
-修改 `backend/config/config.yaml` 中的 `dsn` 配置:
-```yaml
-database:
-  dsn: "root:你的密码@tcp(127.0.0.1:3306)/roomsync?charset=utf8mb4&parseTime=True&loc=Local"
-```
+## 🚀 快速开始
 
-### 3. 运行项目
-```bash
-cd backend
-go mod tidy
-go run main.go
-```
-启动后，系统将自动执行 Gorm 的 AutoMigrate 构建表结构。
+### 1. 后端启动
+1. 准备 MySQL 数据库，创建 `roomsync` 库。
+2. 修改 `backend/config/config.yaml` 中的 `dsn` (数据库连接地址)。
+3. 在 `backend/` 目录下执行：
+   ```bash
+   go mod tidy
+   go run main.go
+   ```
 
-### 4. 测试 API
-> 注意：注册的第一个用户将自动成为 `admin` 角色。
-可以使用 Postman 导入或直接发送 HTTP 请求到 `http://localhost:8080/api/...` 进行接口测试。
+### 2. 前端启动
+1. 在 `frontend/` 目录下安装依赖：
+   ```bash
+   npm install
+   ```
+2. 启动开发服务器：
+   ```bash
+   npm run dev
+   ```
+3. 访问 `http://localhost:5173`。
 
-## 项目亮点 (简历撰写参考)
-- **架构设计**: 遵循 MVC 和 Clean Architecture 思想，使路由、中间件、逻辑层和数据访问层分离。
-- **并发控制**: 借助 SQL 的条件约束及事务锁机制，有效预防了会议室高并发预约产生的时间冲突。
-- **安全机制**: 实现了基于 JWT 的身份验证和基于中间件的 RBAC (Role-Based Access Control) 角色控制。
-- **规范编码**: 遵循统一的 HTTP 状态码与响应格式封装，提高了前后端对接效率。
+## 📸 API 验证逻辑
+- **管理员**: 系统的第一个注册用户将自动获得 `admin` 权限，可以增删会议室。
+- **冲突检测**: 预约时系统会自动校验所选时间段内该会议室是否已被占用。
+- **状态机**: 支持 `pending` (待审核)、`approved` (已批准)、`rejected` (已拒绝)、`cancelled` (已取消) 四种状态。
 
-## 前端 (待完善)
-前端框架已预留在 `frontend` 目录，建议使用 `npm create vite@latest frontend -- --template vue-ts` 初始化 Vue 3 并在其中使用 Element Plus 快速构建 UI。
+## 📜 许可证
+MIT License

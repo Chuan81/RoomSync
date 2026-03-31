@@ -1,0 +1,25 @@
+# === Backend (Golang) ===
+backend/bin/
+backend/*.exe
+backend/*.test
+backend/config/config.local.yaml
+backend/go.sum
+
+# === Frontend (Vue 3) ===
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# === IDE & OS ===
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+node_modules/
+dist/
