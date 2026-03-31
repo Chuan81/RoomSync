@@ -2,6 +2,10 @@
   <div class="layout">
     <el-header class="header">
       <div class="logo">RoomSync</div>
+      <div class="nav-links">
+        <el-button link type="primary">会议室大盘</el-button>
+        <el-button v-if="isAdmin" link @click="$router.push('/admin/bookings')">审批管理</el-button>
+      </div>
       <div class="user-info">
         <span>{{ userStore.user?.username }} ({{ userStore.user?.role }})</span>
         <el-button link @click="handleLogout">退出</el-button>
@@ -160,6 +164,7 @@ onMounted(fetchRooms)
   background: #001529; color: white; padding: 0 20px; 
 }
 .logo { font-size: 20px; font-weight: bold; }
+.nav-links { flex: 1; margin-left: 50px; }
 .user-info { font-size: 14px; }
 .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .room-card { margin-bottom: 20px; }
